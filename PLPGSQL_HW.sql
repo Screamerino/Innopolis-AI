@@ -1,8 +1,11 @@
+
 create table if not exists students (
 	id integer generated always as identity primary key,
 	name text,
 	total_score integer default 0
 );
+
+alter table students add column scholarship integer default 0;
 
 create table if not exists activity_scores (
 	student_id integer references students,
@@ -15,17 +18,23 @@ create or replace function calculate_scholarship() returns trigger
 language plpgsql as $$
 declare 
 	sum_score integer := 0;
+	_scholarship integer;
 begin
 	select sum(score) into sum_score
 	from activity_scores
 	where student_id = new.student_id;
 	if sum_score < 80 then 
-		raise notice 'Стипендия = 0';
+		_scholarship := 0;
 	elsif sum_score >= 80 and sum_score < 90 then 
-		raise notice 'Стипендия = 500';
+		_scholarship := 500;
 	else
-		raise notice 'Стипендия = 1000';
+		_scholarship := 1000;
 	end if;
+
+	update students
+	set scholarship = _scholarship
+	where id = new.student_id;
+
 	return new;
 end;
 $$
